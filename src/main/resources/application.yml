@@ -1,0 +1,5 @@
+server:
+  port: 8000
+path:
+#  qrcode: D:\weibo-qrcode
+  qrcode: /home/ubuntu/weibo/weibo-qrcode/

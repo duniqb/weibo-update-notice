@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>title</title>
+    <link rel="stylesheet" type="text/css" href="../bootstrap-4.6.0/css/bootstrap.min.css">
+    <script type="text/javascript" src="../js/jquery-3.6.0.min.js"></script>
+    <script type="text/javascript" src="../js/jquery.cookie.min.js"></script>
+    <script type="text/javascript" src="../js/jquery.timers.min.js"></script>
+    <script type="text/javascript" src="../bootstrap-4.6.0/js/bootstrap.min.js"></script>
+</head>
+<body>
+<div class="text-center" style="margin-top:10%">
+    <h3 id="title">扫码登录</h3>
+    <img id="qrCode" src=""/>
+</div>
+<div>
+
+</div>
+</body>
+
+
+<script>
+    // 获取二维码
+    $.get("/login/getQrCode", function (data, status) {
+        console.log('data', data)
+        console.log('status', status)
+        if (data.code === 0) {
+            $("#qrCode").attr("src", data.data.imageName);
+            $.cookie('current', data.data.current);
+            $.cookie('qrId', data.data.qrId);
+        }
+    });
+
+    // 每秒请求一次，查看二维码是否被扫描
+    $('body').everyTime('1s', function () {
+        let current = $.cookie('current');
+        let qrId = $.cookie('qrId');
+        $.get("/login/checkLogin?qrId=" + qrId + "&current=" + current, function (data, status) {
+            if (data.code === 0) {
+                // 未使用
+                if (data.data.retCode === "50114001") {
+                }
+                // 成功扫描，请在手机点击确认以登录
+                else if (data.data.retCode === "50114002") {
+                    $("#title").text(data.data.msg);
+                }
+                // 扫描成功
+                else if (data.data.retCode === "20000000") {
+                    $("#qrCode").attr("src", "");
+                    // 停止计时器
+                    $('body').stopTime();
+                    let alt = JSON.parse(data.data.data).alt
+                    // 登录微博
+                    $.get("/login/login?alt=" + alt + "&current=" + current + "&qrId=" + qrId, function (data, status) {
+                        console.log('data', data)
+                        console.log('status', status)
+                        if (data.code === 0) {
+                            $("#title").text("登录成功，开始微博更新通知");
+                        }
+                    });
+
+                    console.log('alt', alt)
+                }
+                // 该二维码已登录，请重新扫描
+                else if (data.data.retCode === "50114004") {
+                    $("#title").text(data.data.msg);
+                }
+            }
+        });
+    });
+</script>
+</html>
